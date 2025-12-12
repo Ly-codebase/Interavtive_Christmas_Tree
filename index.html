@@ -379,29 +379,39 @@
         }
         
         function setupCamera() {
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ 'video': { facingMode: 'user' } })
+            if (!navigator.mediaDevices?.getUserMedia) {
+                console.error('您的浏览器不支持摄像头访问。');
+                return;
+            }
+        
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
                 .then(stream => {
-                    videoElement.srcObject = stream;
-                    videoElement.play();
-
+                    // 关键1：只设置一次 srcObject
+                    if (videoElement.srcObject !== stream) {
+                        videoElement.srcObject = stream;
+                    }
+        
+                    // 关键2：让 CameraHelper 全权管理 play()，我们不再手动 play()
+                    // 删除这行：videoElement.play();
+        
                     const videoWidth = videoElement.videoWidth || 640;
                     const videoHeight = videoElement.videoHeight || 480;
                     canvasElement.width = videoWidth;
                     canvasElement.height = videoHeight;
-                    
-                    if (window.Camera && hands) {    
-                            const cameraHelper = new window.Camera(videoElement, {
-                                onFrame: async () => { await hands.send({image: videoElement}); },
-                                width: videoWidth, height: videoHeight
-                            });
-                            cameraHelper.start();
+        
+                    if (window.Camera && hands) {
+                        const cameraHelper = new window.Camera(videoElement, {
+                            onFrame: async () => { await hands.send({ image: videoElement }); },
+                            width: videoWidth,
+                            height: videoHeight
+                        });
+                        // Camera.start() 会安全地调用 play()（带防重逻辑）
+                        cameraHelper.start();
                     }
                 })
                 .catch(err => {
                     console.error('无法获取摄像头权限:', err);
                 });
-            } else { console.error('您的浏览器不支持摄像头访问。'); }
         }
 
         function animate() {
@@ -444,4 +454,5 @@
     </script>
 </body>
 </html>
+
 
