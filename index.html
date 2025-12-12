@@ -70,7 +70,6 @@
             transform: scaleX(-1);
         }
     </style>
-    <!--  MediaPipe v0.4：同步加载（非 module），确保 Hands 挂到 window -->
     <script src="https://unpkg.com/@mediapipe/hands@0.4.1633552471/hands.js"></script>
     <script src="https://unpkg.com/@mediapipe/drawing_utils@0.4.1633552471/drawing_utils.js"></script>
     <script src="https://unpkg.com/@mediapipe/camera_utils@0.4.1633552471/camera_utils.js"></script>
@@ -91,9 +90,6 @@
     <div id="info">
         状态: **初始化中** ...
     </div>
-   <script src="https://unpkg.com/@mediapipe/hands@0.4.1633552471/hands.js" async="false"></script>
-    <script src="https://unpkg.com/@mediapipe/drawing_utils@0.4.1633552471/drawing_utils.js" async="false"></script>
-    <script src="https://unpkg.com/@mediapipe/camera_utils@0.4.1633552471/camera_utils.js" async="false"></script>
 <script type="module">
         import * as THREE from 'three';
         import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -409,4 +405,5 @@
     </script>
 </body>
 </html>
+
 
