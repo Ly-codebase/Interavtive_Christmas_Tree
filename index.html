@@ -31,11 +31,14 @@
         }
     </style>
     
-    <script src="https://unpkg.com/coi-serviceworker@0.1.7/coi-serviceworker.min.js"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
+    <script src="./coi-serviceworker.min.js"></script> 
     
-    </head>
+    <script src="https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+</head>
 <body>
     <div id="mediaPipeContainer">
         <video id="mediaPipeVideo" autoplay playsinline></video>
@@ -47,7 +50,7 @@
     </div>
 
 <script type="module">
-    // --- Three.js 模块导入 (保留) ---
+    // --- Three.js 模块导入 (使用完整 URL，保持不变) ---
     import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.js';
     import { EffectComposer } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js';
     import { RenderPass } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/RenderPass.js';
@@ -92,7 +95,7 @@
         if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
             const handLandmarks = results.multiHandLandmarks[0];
             
-            // 确保 drawConnectors 和 drawLandmarks 存在 (由异步脚本提供)
+            // 依赖全局变量 (window.drawConnectors, window.HAND_CONNECTIONS)
             if (window.drawConnectors && window.drawLandmarks) {
                 window.drawConnectors(canvasCtx, handLandmarks, window.HAND_CONNECTIONS, {color: '#F0E68C', lineWidth: 3});
                 window.drawLandmarks(canvasCtx, handLandmarks, {color: '#cc0000', lineWidth: 1, radius: 5});
@@ -145,21 +148,11 @@
         }
     }
 
-    // ========================================================
-    // ⭐ 修复 1：异步加载 MediaPipe 脚本 (解决 Hands is not defined)
-    // ========================================================
-    async function loadMediaPipeScripts() {
-        console.log("Loading MediaPipe scripts...");
-        // 动态异步导入 hands.js，它会将 Hands, Camera, drawConnectors 注册到全局 window 对象
-        await import('https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js');
-        await import('https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js');
-        await import('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js');
-        console.log("MediaPipe scripts loaded.");
-    }
 
     function initMediaPipe() {
-        // 在此处，Hands 应该已经被 loadMediaPipeScripts 注册到 window 上了
+        // 依赖全局变量 (window.Hands)
         hands = new window.Hands({ 
+            // 恢复 CDN 路径，因为本地 Service Worker 成功注册后，会解决 CORS 问题
             locateFile: (file) => {
                 return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
             }
@@ -277,7 +270,6 @@
         composer.addPass(bloomPass);
     }
     
-    // ⭐ 修复 2：处理摄像头播放中断 (AbortError)
     function setupCamera() {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             navigator.mediaDevices.getUserMedia({ 'video': { facingMode: 'user' } })
@@ -291,6 +283,7 @@
                     canvasElement.height = videoHeight;
                     
                     if (window.Camera && hands) { 
+                        // 依赖全局变量 (window.Camera)
                         const cameraHelper = new window.Camera(videoElement, {
                             onFrame: async () => { await hands.send({image: videoElement}); },
                             width: videoWidth, height: videoHeight
@@ -337,14 +330,11 @@
     }
 
     // --- 应用入口 ---
-    async function init() {
-        // 等待 MediaPipe 脚本完全加载
-        await loadMediaPipeScripts(); 
-        
+    function init() {
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 18;
-        // ... (其余 Three.js 初始化) ...
+        
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -353,7 +343,6 @@
         clock = new THREE.Clock();
         scene.add(new THREE.AmbientLight(0xffffff, 0.05));
 
-        // 现在可以安全地调用 initMediaPipe
         initMediaPipe(); 
 
         createParticleSystem();
