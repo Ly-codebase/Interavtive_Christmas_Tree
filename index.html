@@ -82,9 +82,9 @@
         }
     }</script>
 
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.5.1675469247/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3/drawing_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 </head>
 <body>
     <div id="mediaPipeContainer">
@@ -345,20 +345,22 @@
         }
 
         function initMediaPipe() {
+            // 使用明确的版本路径来解决 CORS 问题
             hands = new Hands({locateFile: (file) => {
+                // 使用一个稳定的、配置了正确 CORS 头的版本号路径
                 return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.5.1675469247/${file}`;
             }});
             
-            hands.setOptions({    
-                maxNumHands: 1,    
-                modelComplexity: 1,    
-                minDetectionConfidence: 0.7,    
-                minTrackingConfidence: 0.5    
+            hands.setOptions({    
+                maxNumHands: 1,    
+                modelComplexity: 1,    
+                minDetectionConfidence: 0.7,    
+                minTrackingConfidence: 0.5    
             });
             
-            window.hands = hands;    
-            hands.onResults(window.onResults);    
-        }
+            window.hands = hands;    
+            hands.onResults(window.onResults);    
+        }
 
         /**
          * 修复 3: 强制最低阈值
@@ -444,6 +446,7 @@
 </body>
 
 </html>
+
 
 
 
