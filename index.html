@@ -346,13 +346,13 @@
 
         function initMediaPipe() {
             hands = new Hands({locateFile: (file) => {
-                return `https://unpkg.com/@mediapipe/hands@0.5.1650352648/${file}`;
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
             }});
             
             hands.setOptions({    
                 maxNumHands: 1,    
-                modelComplexity: 0,    
-                minDetectionConfidence: 0.5,    
+                modelComplexity: 1,    
+                minDetectionConfidence: 0.7,    
                 minTrackingConfidence: 0.5    
             });
             
@@ -444,5 +444,6 @@
 </body>
 
 </html>
+
 
 
