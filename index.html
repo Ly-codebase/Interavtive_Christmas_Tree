@@ -349,7 +349,7 @@ function initMediaPipe() {
     hands = new Hands({
         locateFile: (file) => {
             // 显式指定 v0.4 路径，防止 fallback 到 v0.5 assets
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1633552471/${file}`;
+            return `https://unpkg.com/@mediapipe/hands@0.4.1633552471/${file}`;
         }
     });
     hands.setOptions({
@@ -455,6 +455,7 @@ function initMediaPipe() {
     </script>
 </body>
 </html>
+
 
 
 
