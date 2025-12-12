@@ -344,21 +344,22 @@
             window.particles = particles;
         }
 
-        function initMediaPipe() {
-            hands = new Hands({locateFile: (file) => {
-                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1633552471/${file}`;
-            }});
-            
-            hands.setOptions({    
-                maxNumHands: 1,    
-                modelComplexity: 1,    
-                minDetectionConfidence: 0.7,    
-                minTrackingConfidence: 0.5    
-            });
-            
-            window.hands = hands;    
-            hands.onResults(window.onResults);    
+function initMediaPipe() {
+    hands = new Hands({
+        locateFile: (file) => {
+            // 显式指定 v0.4 路径，防止 fallback 到 v0.5 assets
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1633552471/${file}`;
         }
+    });
+    hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.7,
+        minTrackingConfidence: 0.5
+    });
+    hands.onResults(window.onResults);
+    window.hands = hands;
+}
 
         /**
          * 修复 3: 强制最低阈值
@@ -453,6 +454,7 @@
     </script>
 </body>
 </html>
+
 
 
 
