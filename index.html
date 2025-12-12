@@ -346,7 +346,7 @@
 
         function initMediaPipe() {
             hands = new Hands({locateFile: (file) => {
-                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+                return `https://unpkg.com/@mediapipe/hands@0.5.1650352648/${file}`;
             }});
             
             hands.setOptions({    
@@ -444,3 +444,4 @@
 </body>
 
 </html>
+
