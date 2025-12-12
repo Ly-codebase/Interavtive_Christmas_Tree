@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎄 Merry Christmas </title>
+    <title>🎄 Merry Christmas</title>
     <style>
         body {
             margin: 0;
@@ -82,9 +82,9 @@
         }
     }</script>
 
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.4.1646424915/drawing_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.4.1646424915/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 </head>
 <body>
     <div id="mediaPipeContainer">
@@ -345,22 +345,20 @@
         }
 
         function initMediaPipe() {
-            // **最终修复：使用相对路径加载本地托管的资源**
-            hands = new Hands({locateFile: (file) => {
-                // 文件将从您的 GitHub Pages 域名下的此路径加载
-                return `./mediapipe_assets/${file}`;
-            }});
-            
-            hands.setOptions({    
-                maxNumHands: 1,    
-                modelComplexity: 1,    
-                minDetectionConfidence: 0.7,    
-                minTrackingConfidence: 0.5    
-            });
-            
-            window.hands = hands;    
-            hands.onResults(window.onResults);    
-        }
+            hands = new Hands({locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }});
+            
+            hands.setOptions({    
+                maxNumHands: 1,    
+                modelComplexity: 1,    
+                minDetectionConfidence: 0.7,    
+                minTrackingConfidence: 0.5    
+            });
+            
+            window.hands = hands;    
+            hands.onResults(window.onResults);    
+        }
 
         /**
          * 修复 3: 强制最低阈值
@@ -444,12 +442,4 @@
         init();
     </script>
 </body>
-
 </html>
-
-
-
-
-
-
-
