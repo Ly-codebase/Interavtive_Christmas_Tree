@@ -83,8 +83,8 @@
     }</script>
 
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 </head>
 <body>
     <div id="mediaPipeContainer">
@@ -345,22 +345,27 @@
         }
 
         function initMediaPipe() {
-            // 使用明确的版本路径来解决 CORS 问题
-            hands = new Hands({locateFile: (file) => {
-                // 使用一个稳定的、配置了正确 CORS 头的版本号路径
-                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.5.1675469247/${file}`;
-            }});
-            
-            hands.setOptions({    
-                maxNumHands: 1,    
-                modelComplexity: 1,    
-                minDetectionConfidence: 0.7,    
-                minTrackingConfidence: 0.5    
+            // 关键修正：将 Hands 实例和模型文件路径分离
+            // Hands.js 脚本通过 <head> 中的通用 CDN 加载
+            // 模型文件 (.tflite, .binarypb) 通过 locateFile 指定到明确的版本路径，以解决 CORS 问题
+            hands = new Hands({
+                locateFile: (file) => {
+                    // 使用一个稳定的、配置了正确 CORS 头的版本号路径来定位模型文件
+                    // 注意：我们使用一个明确的版本号，这个版本号通常能解决 cdnjs/jsdelivr 的 CORS 问题
+                    return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.5.1675469247/${file}`;
+                }
             });
             
-            window.hands = hands;    
-            hands.onResults(window.onResults);    
-        }
+            hands.setOptions({
+                maxNumHands: 1,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.7,
+                minTrackingConfidence: 0.5
+            });
+            
+            window.hands = hands;
+            hands.onResults(window.onResults);
+        }
 
         /**
          * 修复 3: 强制最低阈值
@@ -446,6 +451,7 @@
 </body>
 
 </html>
+
 
 
 
