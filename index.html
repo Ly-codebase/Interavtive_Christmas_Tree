@@ -16,8 +16,7 @@
         canvas {
             display: block;
         }
-        
-        /* 5. 背景艺术字：Merry Christmas */
+        /* 背景艺术字：Merry Christmas */
         body::before {
             content: "Merry Christmas";
             position: absolute;
@@ -34,7 +33,6 @@
             letter-spacing: 0.1em;
             line-height: 1.2;
         }
-
         #info {
             position: absolute;
             top: 10px;
@@ -72,8 +70,11 @@
             transform: scaleX(-1);
         }
     </style>
+    <!-- 📌 MediaPipe v0.4：同步加载（非 module），确保 Hands 挂到 window -->
+    <script src="https://unpkg.com/@mediapipe/hands@0.4.1633552471/hands.js"></script>
+    <script src="https://unpkg.com/@mediapipe/drawing_utils@0.4.1633552471/drawing_utils.js"></script>
+    <script src="https://unpkg.com/@mediapipe/camera_utils@0.4.1633552471/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
-
     <script type="importmap">{
         "imports": {
             "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.js",
@@ -81,18 +82,12 @@
             "three/examples/jsm/shaders/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/shaders/"
         }
     }</script>
-
-<!-- 使用 UNPKG + 国内可访问 CDN -->
-<script src="https://unpkg.com/@mediapipe/hands@0.4.1633552471/hands.js"></script>
-<script src="https://unpkg.com/@mediapipe/drawing_utils@0.4.1633552471/drawing_utils.js"></script>
-<script src="https://unpkg.com/@mediapipe/camera_utils@0.4.1633552471/camera_utils.js"></script>
 </head>
 <body>
     <div id="mediaPipeContainer">
-        <video id="mediaPipeVideo" autoplay playsinline></video>
+        <video id="mediaPipeVideo" autoplay playsinline muted></video>
         <canvas id="mediaPipeCanvas"></canvas>
     </div>
-
     <div id="info">
         状态: **初始化中** ...
     </div>
@@ -106,88 +101,84 @@
         // --- 核心变量 ---
         let scene, camera, renderer, clock;
         let composer;
-        let particles;      
-        let ribbonParticles;    
-        let starOrnament;       
-        let hands;          
-        
-        let isScattered = false;    
-        const ELEMENTS_COUNT = 25000;    
+        let particles;
+        let ribbonParticles;
+        let starOrnament;
+        let hands;
+        let isScattered = false;
+        const ELEMENTS_COUNT = 25000;
         const RIBBON_COUNT = 500;
         const treeHeight = 12;
         const maxRadius = 5;
-        
-        const currentPositions = [];    
-        const targetPositions = [];    
-        const initialPositions = [];    
-
+        const currentPositions = [];
+        const targetPositions = [];
+        const initialPositions = [];
         const COLORS = {
-            // 重新使用深绿，但我们用 Bloom 阈值来确保其可见性
             darkGreen: new THREE.Color(0x004d40),
             gold: new THREE.Color(0xFFD700),
             red: new THREE.Color(0xCC0000),
             white: new THREE.Color(0xFFFFFF)
         };
-        const EMISSIVE_COLORS = [];    
-
-        // 移除所有纹理加载代码，以保证兼容性。
+        const EMISSIVE_COLORS = [];
 
         const videoElement = document.getElementById('mediaPipeVideo');
         const canvasElement = document.getElementById('mediaPipeCanvas');
         const canvasCtx = canvasElement.getContext('2d');
         const TWEEN = window.TWEEN;
 
-        // --- MediaPipe 和 Tween 逻辑（保持不变） ---
-        window.onResults = function(results) { 
+        // --- MediaPipe 回调 ---
+        window.onResults = function(results) {
             canvasCtx.save();
             canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const handLandmarks = results.multiHandLandmarks[0];
-                
                 if (window.drawConnectors && window.drawLandmarks) {
                     window.drawConnectors(canvasCtx, handLandmarks, window.HAND_CONNECTIONS, {color: '#F0E68C', lineWidth: 3});
                     window.drawLandmarks(canvasCtx, handLandmarks, {color: '#cc0000', lineWidth: 1, radius: 5});
                 }
-
                 const tip_index = handLandmarks[8];
                 const palm = handLandmarks[0];
                 const dist_index = Math.abs(tip_index.y - palm.y);
                 const threshold = 0.2;
                 let isFist = dist_index < threshold;
-                
                 if (window.particles) {
-                    if (isFist && window.isScattered) { window.setChristmasTreeState(false); }
-                    else if (!isFist && !window.isScattered) { window.setChristmasTreeState(true); }
+                    if (isFist && window.isScattered) {
+                        window.setChristmasTreeState(false);
+                    } else if (!isFist && !window.isScattered) {
+                        window.setChristmasTreeState(true);
+                    }
                 }
             }
             canvasCtx.restore();
         };
 
-        window.setChristmasTreeState = function(scatter) { 
+        window.setChristmasTreeState = function(scatter) {
             if (window.isScattered === scatter) return;
-            window.isScattered = scatter;    
-
-            document.getElementById('info').innerHTML =    
+            window.isScattered = scatter;
+            document.getElementById('info').innerHTML =
                 `状态: **${scatter ? '散开态' : '合拢态'}** <br> 手势: **握拳** (合拢) / **张开** (散开)`;
-            
             const target = scatter ? targetPositions : initialPositions;
             const positionsAttribute = particles.geometry.attributes.position;
             const positionsArray = positionsAttribute.array;
-
             for (let i = 0; i < ELEMENTS_COUNT; i++) {
                 const startIndex = i * 3;
-                const startPos = { x: currentPositions[startIndex], y: currentPositions[startIndex + 1], z: currentPositions[startIndex + 2] };
-                const endPos = { x: target[startIndex], y: target[startIndex + 1], z: target[startIndex + 2] };
-
+                const startPos = {
+                    x: currentPositions[startIndex],
+                    y: currentPositions[startIndex + 1],
+                    z: currentPositions[startIndex + 2]
+                };
+                const endPos = {
+                    x: target[startIndex],
+                    y: target[startIndex + 1],
+                    z: target[startIndex + 2]
+                };
                 new TWEEN.Tween(startPos)
                     .to(endPos, 2500)
                     .easing(TWEEN.Easing.Quadratic.InOut)
                     .onUpdate(() => {
-                        currentPositions[startIndex]     = startPos.x;
+                        currentPositions[startIndex] = startPos.x;
                         currentPositions[startIndex + 1] = startPos.y;
                         currentPositions[startIndex + 2] = startPos.z;
-                        
                         positionsArray[startIndex] = startPos.x;
                         positionsArray[startIndex + 1] = startPos.y;
                         positionsArray[startIndex + 2] = startPos.z;
@@ -195,12 +186,17 @@
                     })
                     .start();
             }
-        }
+        };
 
-
-        // --- 初始化和渲染循环 ---
-
+        // --- 初始化 ---
         function init() {
+            // 安全检查：确保 Hands 已加载
+            if (typeof window.Hands === 'undefined') {
+                document.getElementById('info').innerHTML = '❌ MediaPipe 加载失败，请检查网络';
+                console.error('[FATAL] Hands is not defined. MediaPipe script failed to load.');
+                return;
+            }
+
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.z = 18;
@@ -210,112 +206,89 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.outputColorSpace = THREE.SRGBColorSpace;
             document.body.appendChild(renderer.domElement);
-            
+
             clock = new THREE.Clock();
-            
             scene.add(new THREE.AmbientLight(0xffffff, 0.05));
 
             initMediaPipe();
-
             createParticleSystem();
             createRibbonParticles();
             createStarOrnament();
-
             setupPostProcessing();
-
             setupCamera();
+
             window.addEventListener('resize', onWindowResize, false);
-            
             animate();
-            
-            document.getElementById('info').innerHTML =    
+
+            document.getElementById('info').innerHTML =
                 `状态: 合拢态 (初始) <br> 手势: 握拳 (合拢) / 张开 (散开)`;
         }
-        
+
         function createStarOrnament() {
-            const geometry = new THREE.SphereGeometry(0.5, 32, 32); 
+            const geometry = new THREE.SphereGeometry(0.5, 32, 32);
             const material = new THREE.MeshPhongMaterial({
                 color: COLORS.gold,
                 emissive: COLORS.gold,
-                emissiveIntensity: 3, 
+                emissiveIntensity: 3,
                 flatShading: false
             });
             starOrnament = new THREE.Mesh(geometry, material);
-            starOrnament.position.set(0, treeHeight / 2 + 0.8, 0); 
+            starOrnament.position.set(0, treeHeight / 2 + 0.8, 0);
             scene.add(starOrnament);
         }
 
-        /**
-         * 修复 2: 使用高兼容性 PointsMaterial
-         */
         function createRibbonParticles() {
             const positions = [];
             const colors = [];
             const goldColor = COLORS.gold;
-
             for (let i = 0; i < RIBBON_COUNT; i++) {
                 const fraction = i / RIBBON_COUNT;
                 const y = fraction * treeHeight - (treeHeight / 2);
-                
-                const radius = (maxRadius * (1 - fraction * 0.7)) * 0.7; 
+                const radius = (maxRadius * (1 - fraction * 0.7)) * 0.7;
                 const angle = fraction * Math.PI * 15 + Math.random() * 0.5;
-                
                 const x = Math.cos(angle) * radius + (Math.random() - 0.5) * 0.2;
                 const z = Math.sin(angle) * radius + (Math.random() - 0.5) * 0.2;
-                
                 positions.push(x, y, z);
                 colors.push(goldColor.r, goldColor.g, goldColor.b);
             }
-
             const geometry = new THREE.BufferGeometry();
             geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
             geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-
             const material = new THREE.PointsMaterial({
-                size: 2.0, // **测试：设置超大尺寸**
-                // 移除 map 属性
+                size: 2.0,
                 vertexColors: true,
-                blending: THREE.NormalBlending, // 使用最简单混合模式
+                blending: THREE.NormalBlending,
                 transparent: true,
-                sizeAttenuation: false, // 强制恒定尺寸
-                depthTest: false, 
+                sizeAttenuation: false,
+                depthTest: false,
                 depthWrite: false
             });
-
             ribbonParticles = new THREE.Points(geometry, material);
             scene.add(ribbonParticles);
         }
 
-        /**
-         * 3. 修复 2: 使用高兼容性 PointsMaterial
-         */
         function createParticleSystem() {
             const positions = [];
-            
             for (let i = 0; i < ELEMENTS_COUNT; i++) {
-                const y = (Math.random() * treeHeight) - (treeHeight / 2);    
+                const y = (Math.random() * treeHeight) - (treeHeight / 2);
                 const radius = maxRadius * (1 - (y + (treeHeight / 2)) / treeHeight);
-                
                 const currentRadius = radius * Math.random() * (0.5 + 0.5 * Math.random());
                 const angle = Math.random() * Math.PI * 2;
                 const x = Math.cos(angle) * currentRadius;
                 const z = Math.sin(angle) * currentRadius;
-
                 positions.push(x, y, z);
                 initialPositions.push(x, y, z);
-                currentPositions.push(x, y, z);    
-
+                currentPositions.push(x, y, z);
                 const targetX = (Math.random() - 0.5) * 60;
                 const targetY = (Math.random() - 0.5) * 60;
                 const targetZ = (Math.random() - 0.5) * 60;
-                targetPositions.push(targetX, targetY, targetZ,);    
-                
+                targetPositions.push(targetX, targetY, targetZ);
                 const normalizedY = (y + treeHeight / 2) / treeHeight;
                 let color;
                 if (normalizedY < 0.1 || normalizedY > 0.9) {
                     color = Math.random() < 0.5 ? COLORS.white : COLORS.gold;
                 } else if (Math.random() < 0.8) {
-                    color = COLORS.darkGreen; 
+                    color = COLORS.darkGreen;
                 } else {
                     const r = Math.random();
                     if (r < 0.3) color = COLORS.gold;
@@ -324,111 +297,92 @@
                 }
                 EMISSIVE_COLORS.push(color.r, color.g, color.b);
             }
-
             const particleGeometry = new THREE.BufferGeometry();
             particleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
             particleGeometry.setAttribute('color', new THREE.Float32BufferAttribute(EMISSIVE_COLORS, 3));
-            
             const particleMaterial = new THREE.PointsMaterial({
-                size: 1.5, // **测试：设置超大尺寸**
-                // 移除 map 属性
+                size: 1.5,
                 vertexColors: true,
-                blending: THREE.NormalBlending, // 使用最简单混合模式
+                blending: THREE.NormalBlending,
                 transparent: true,
-                sizeAttenuation: false, // 强制恒定尺寸
-                depthTest: false, 
+                sizeAttenuation: false,
+                depthTest: false,
                 depthWrite: false
             });
-
             particles = new THREE.Points(particleGeometry, particleMaterial);
             scene.add(particles);
             window.particles = particles;
         }
 
-function initMediaPipe() {
-    hands = new Hands({
-        locateFile: (file) => {
-            // 显式指定 v0.4 路径，防止 fallback 到 v0.5 assets
-            return `https://unpkg.com/@mediapipe/hands@0.4.1633552471/${file}`;
+        function initMediaPipe() {
+            hands = new Hands({
+                locateFile: (file) => {
+                    return `https://unpkg.com/@mediapipe/hands@0.4.1633552471/${file}`;
+                }
+            });
+            hands.setOptions({
+                maxNumHands: 1,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.7,
+                minTrackingConfidence: 0.5
+            });
+            hands.onResults(window.onResults);
+            window.hands = hands;
         }
-    });
-    hands.setOptions({
-        maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.7,
-        minTrackingConfidence: 0.5
-    });
-    hands.onResults(window.onResults);
-    window.hands = hands;
-}
 
-        /**
-         * 修复 3: 强制最低阈值
-         */
         function setupPostProcessing() {
             composer = new EffectComposer(renderer);
             composer.addPass(new RenderPass(scene, camera));
-
             const bloomPass = new UnrealBloomPass(
                 new THREE.Vector2(window.innerWidth, window.innerHeight),
-                2.0, // 强度：高
-                0.4, // 半径
-                0.0  // **测试：阈值设为 0.0，确保所有东西都辉光**
+                2.0,
+                0.4,
+                0.0
             );
-            
             composer.addPass(bloomPass);
         }
-        
+
         function setupCamera() {
             if (!navigator.mediaDevices?.getUserMedia) {
                 console.error('您的浏览器不支持摄像头访问。');
                 return;
             }
-        
+
             navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
                 .then(stream => {
-                    // 关键1：只设置一次 srcObject
+                    // ✅ 只设一次 srcObject
                     if (videoElement.srcObject !== stream) {
                         videoElement.srcObject = stream;
                     }
-        
-                    // 关键2：让 CameraHelper 全权管理 play()，我们不再手动 play()
-                    // 删除这行：videoElement.play();
-        
+
                     const videoWidth = videoElement.videoWidth || 640;
                     const videoHeight = videoElement.videoHeight || 480;
                     canvasElement.width = videoWidth;
                     canvasElement.height = videoHeight;
-        
+
+                    // ✅ 不再手动 play()
                     if (window.Camera && hands) {
                         const cameraHelper = new window.Camera(videoElement, {
                             onFrame: async () => { await hands.send({ image: videoElement }); },
                             width: videoWidth,
                             height: videoHeight
                         });
-                        // Camera.start() 会安全地调用 play()（带防重逻辑）
-                        cameraHelper.start();
+                        cameraHelper.start(); // ✅ 它内部安全调用 play()
                     }
                 })
                 .catch(err => {
                     console.error('无法获取摄像头权限:', err);
+                    document.getElementById('info').innerHTML = '⚠️ 摄像头权限被拒绝';
                 });
         }
 
         function animate() {
             requestAnimationFrame(animate);
-
             TWEEN.update();
             const elapsedTime = clock.getElapsedTime();
 
-            if (particles) {
-                particles.rotation.y += 0.001;
-            }
-            
-            if (ribbonParticles) {
-                ribbonParticles.rotation.y = elapsedTime * 0.2;
-            }
-
+            if (particles) particles.rotation.y += 0.001;
+            if (ribbonParticles) ribbonParticles.rotation.y = elapsedTime * 0.2;
             if (starOrnament) {
                 if (window.isScattered) {
                     starOrnament.rotation.y += 0.01;
@@ -438,28 +392,18 @@ function initMediaPipe() {
                     starOrnament.position.y = treeHeight / 2 + 0.8;
                 }
             }
-            
-            composer.render();
+            composer?.render();
         }
 
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            if (composer) {
-                composer.setSize(window.innerWidth, window.innerHeight);
-            }
+            composer?.setSize(window.innerWidth, window.innerHeight);
         }
 
+        // 启动
         init();
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
